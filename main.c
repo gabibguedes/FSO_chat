@@ -3,6 +3,10 @@
 #include <mqueue.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
+#include "common.h"
 
 mqd_t queue, send_queue;
 
@@ -80,9 +84,10 @@ void send_message(msg msg_send){
     strcat(chat, msg_send.receiver);
     strcpy(all_path, "/dev/mqueue");
     strcat(all_path, chat);
-
+    print(all_path);
+    print(chat);
     if (fopen(all_path, "r") != NULL){
-        if ((send_queue = mq_open(chat, O_RDWR)) < 0){
+        if ((send_queue = mq_open(chat, O_WRONLY)) < 0){
             perror("mq_open");
             exit(1);
         }
@@ -99,6 +104,37 @@ void send_message(msg msg_send){
     }
 }
 
+void send(char username[10]){
+    mqd_t mq;
+    char buffer[MAX_SIZE], dest[10],chat[100];
+    msg mensagem;
+
+    /* open the mail queue */
+    CHECK((mqd_t)-1 != mq);
+
+
+    printf("Send to server (enter \"exit\" to stop it):\n");
+    printf("Para: ");
+    scanf("%s", dest);
+    strcpy(chat,"/chat-");
+    strcat(chat, dest);
+    print(chat);
+    mq = mq_open(chat, O_WRONLY);
+    do {
+
+        printf("> ");
+
+        scanf("%s",buffer);
+        mensagem = build_message_to_send(username, dest, buffer);
+  
+        CHECK(0 <= mq_send(mq, mensagem.all_msg, MAX_SIZE, 0));
+
+    } while (strncmp(buffer, MSG_STOP, strlen(MSG_STOP)));
+
+    /* cleanup */
+    CHECK((mqd_t)-1 != mq_close(mq));
+}
+
 int main(){
     char username[10], a[10];
     int user_valid=0;
@@ -111,7 +147,7 @@ int main(){
     if(!user_valid){
         exit(0);
     }
-    msg lala = build_message_to_send(username, "gabi", "ola, como vai?\0");
-    send_message(lala);
+    msg lala = build_message_to_send(username, "gabi", "ola, como vai?");
+    send(username);
     return 0;
 }
