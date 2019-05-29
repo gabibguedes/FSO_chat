@@ -5,10 +5,12 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include  <pthread.h>
 
 #include "common.h"
 
 mqd_t queue, send_queue;
+pthread_t id ,id2;
 
 typedef struct _msg{
     char sender[10];
@@ -112,7 +114,6 @@ void send(char username[10]){
     /* open the mail queue */
     CHECK((mqd_t)-1 != mq);
 
-
     printf("Send to server (enter \"exit\" to stop it):\n");
     printf("Para: ");
     scanf("%s", dest);
@@ -121,22 +122,58 @@ void send(char username[10]){
     print(chat);
     mq = mq_open(chat, O_WRONLY);
     do {
-
         printf("> ");
-
         scanf("%s",buffer);
         mensagem = build_message_to_send(username, dest, buffer);
-  
         CHECK(0 <= mq_send(mq, mensagem.all_msg, MAX_SIZE, 0));
-
     } while (strncmp(buffer, MSG_STOP, strlen(MSG_STOP)));
 
     /* cleanup */
     CHECK((mqd_t)-1 != mq_close(mq));
 }
 
+void * receive (void *apelido) {
+    mqd_t mq;
+    struct mq_attr attr;
+    char buffer[MAX_SIZE + 1];
+    int must_stop = 0;
+
+    /* initialize the queue attributes */
+    attr.mq_flags = 0;
+    attr.mq_maxmsg = 10;
+    attr.mq_msgsize = MAX_SIZE;
+    attr.mq_curmsgs = 0;
+
+    /* create the message queue */
+    mq = mq_open("/chat-gabi", O_CREAT | O_RDONLY, 0644, &attr);
+    CHECK((mqd_t)-1 != mq);
+
+    do {
+        ssize_t bytes_read;
+
+        /* receive the message */
+        bytes_read = mq_receive(mq, buffer, MAX_SIZE, NULL);
+        CHECK(bytes_read >= 0);
+
+        buffer[bytes_read] = '\0';
+        if (! strncmp(buffer, MSG_STOP, strlen(MSG_STOP)))
+        {
+            must_stop = 1;
+        }
+        else
+        {
+            printf("Received: %s\n", buffer);
+        }
+    } while (!must_stop);
+
+    /* cleanup */
+    CHECK((mqd_t)-1 != mq_close(mq));
+    CHECK((mqd_t)-1 != mq_unlink(QUEUE_NAME));
+    pthread_exit(NULL);
+}
+
 int main(){
-    char username[10], a[10];
+    char username[10];
     int user_valid=0;
     system("clear");
     printf("Bem vindo ao Chat!\n\n");
@@ -147,7 +184,9 @@ int main(){
     if(!user_valid){
         exit(0);
     }
-    msg lala = build_message_to_send(username, "gabi", "ola, como vai?");
+
+    pthread_create  (&id,   NULL , (void *)  receive ,   NULL);
+
     send(username);
     return 0;
 }

@@ -7,7 +7,7 @@
 1. No docker execute os comandos para inicializar o **Chat**: 
     * Para compilar:
         ``` sh
-        gcc -o chat -lrt main.c
+        gcc -o chat -lrt -lpthread  main.c
         ```
     * Para executar:
         ``` sh
