@@ -141,45 +141,46 @@ void send(char username[10]){
     CHECK((mqd_t)-1 != mq_close(mq));
 }
 
-// void * receive (void *apelido) {
-//     mqd_t mq;
-//     struct mq_attr attr;
-//     char buffer[MAX_SIZE + 1];
-//     int must_stop = 0;
+void * receive (void *args) {
+    mqd_t mq;
+    struct mq_attr attr;
+    char buffer[MAX_SIZE + 1];
+    int must_stop = 0;
 
-//     /* initialize the queue attributes */
-//     attr.mq_flags = 0;
-//     attr.mq_maxmsg = 10;
-//     attr.mq_msgsize = MAX_SIZE;
-//     attr.mq_curmsgs = 0;
+    /* initialize the queue attributes */
+    attr.mq_flags = 0;
+    attr.mq_maxmsg = 10;
+    attr.mq_msgsize = MAX_SIZE;
+    attr.mq_curmsgs = 0;
 
-//     /* create the message queue */
-//     mq = mq_open("/chat-gabi", O_CREAT | O_RDONLY, 0644, &attr);
-//     CHECK((mqd_t)-1 != mq);
+    /* create the message queue */
+    mq = mq_open("/chat-gabi", O_RDONLY);
+    CHECK((mqd_t)-1 != mq);
 
-//     do {
-//         ssize_t bytes_read;
+    do {
+        int bytes_read;
 
-//         /* receive the message */
-//         bytes_read = mq_receive(mq, buffer, MAX_SIZE, NULL);
-//         CHECK(bytes_read >= 0);
+        /* receive the message */
+        bytes_read = mq_receive(mq, buffer, MAX_SIZE+1, NULL);
+        printf("A mensagem e os bytes foram: %s --- %d", buffer,bytes_read);
+        CHECK(bytes_read >= 0);
 
-//         buffer[bytes_read] = '\0';
-//         if (! strncmp(buffer, MSG_STOP, strlen(MSG_STOP)))
-//         {
-//             must_stop = 1;
-//         }
-//         else
-//         {
-//             printf("Received: %s\n", buffer);
-//         }
-//     } while (!must_stop);
+        buffer[bytes_read] = '\0';
+        if (! strncmp(buffer, MSG_STOP, strlen(MSG_STOP)))
+        {
+            must_stop = 1;
+        }
+        else
+        {
+            printf("Received: %s\n", buffer);
+        }
+    } while (!must_stop);
 
-//     /* cleanup */
-//     CHECK((mqd_t)-1 != mq_close(mq));
-//     CHECK((mqd_t)-1 != mq_unlink(QUEUE_NAME));
-//     pthread_exit(NULL);
-// }
+    /* cleanup */
+    CHECK((mqd_t)-1 != mq_close(mq));
+    CHECK((mqd_t)-1 != mq_unlink(QUEUE_NAME));
+    pthread_exit(NULL);
+}
 
 int main(){
     char username[10];
@@ -194,8 +195,8 @@ int main(){
         exit(0);
     }
 
-    //pthread_create  (&id,   NULL , (void *)  receive ,   NULL);
-
     send(username);
+    pthread_create  (&id,   NULL , (void *)  receive ,   NULL);
+    pthread_join (id,NULL);
     return 0;
 }
