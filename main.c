@@ -6,11 +6,13 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <pthread.h>
+#include <errno.h>
 
 #include "common.h"
 
 mqd_t queue, send_queue;
 pthread_t id ,id2;
+char chat[100];
 
 typedef struct _msg{
     char sender[10];
@@ -109,17 +111,14 @@ void send_message(msg msg_send){
 }
 
 void send(char username[10]){
+    mqd_t mq;
+    char buffer[MAX_SIZE];
     struct mq_attr attr;
+    char dest[20];
     attr.mq_flags = 0;
     attr.mq_maxmsg = 10;
     attr.mq_msgsize = MAX_SIZE;
     attr.mq_curmsgs = 0;
-    mqd_t mq;
-    char buffer[MAX_SIZE], dest[10],chat[100];
-    msg mensagem;
-
-    /* open the mail queue */
-    CHECK((mqd_t)-1 != mq);
 
     printf("Send to server (enter \"exit\" to stop it):\n");
     printf("Para: ");
@@ -127,59 +126,52 @@ void send(char username[10]){
     strcpy(chat,"/chat-");
     strcat(chat, dest);
     print(chat);
-    mq = mq_open(chat, O_CREAT|O_WRONLY, 0777, &attr);
-    do {
-        printf("> ");
-        scanf("%s",buffer);
-        mensagem = build_message_to_send(username, dest, buffer);
-        print("o  ");
-        print(mensagem.all_msg);
-        CHECK(0 <= mq_send(mq, mensagem.all_msg, MAX_SIZE-1  , 0));
-    } while (strncmp(buffer, MSG_STOP, strlen(MSG_STOP)));
+    print("fila q eu to abrindo pra mandar");
+    print(chat);
 
-    /* cleanup */
-    CHECK((mqd_t)-1 != mq_close(mq));
+    mq = mq_open(chat, O_CREAT|O_RDWR|O_NONBLOCK , 0666,&attr);
+    while(1) {
+        scanf("%s", buffer);
+        snprintf(buffer, sizeof(buffer), "MESSAGE %s", buffer);
+        printf("CLIENT: Send message... \n");
+        int bytes_read = mq_send(mq, buffer, MAX_SIZE, 0);
+            printf("CLIENT: send %s %d \n", strerror(errno), bytes_read);
+        sleep(3);
+    }
+    mq_close(mq);
 }
 
-// void * receive (void *apelido) {
-//     mqd_t mq;
-//     struct mq_attr attr;
-//     char buffer[MAX_SIZE + 1];
-//     int must_stop = 0;
-
-//     /* initialize the queue attributes */
-//     attr.mq_flags = 0;
-//     attr.mq_maxmsg = 10;
-//     attr.mq_msgsize = MAX_SIZE;
-//     attr.mq_curmsgs = 0;
-
+void * receive (void *args) {
+    mqd_t mq;
+    struct mq_attr attr;
+    char buffer[MAX_SIZE + 1];
+    int must_stop = 0;
+    int bytes_read;
+    print("oi");
+    /* initialize the queue attributes */
+    attr.mq_flags = 0;
+    attr.mq_maxmsg = 10;
+    attr.mq_msgsize = MAX_SIZE;
+    attr.mq_curmsgs = 0;
+    print("fila q eu to abrindo pra receber");
+    print(chat);
 //     /* create the message queue */
-//     mq = mq_open("/chat-gabi", O_CREAT | O_RDONLY, 0644, &attr);
-//     CHECK((mqd_t)-1 != mq);
-
-//     do {
-//         ssize_t bytes_read;
-
-//         /* receive the message */
-//         bytes_read = mq_receive(mq, buffer, MAX_SIZE, NULL);
-//         CHECK(bytes_read >= 0);
-
-//         buffer[bytes_read] = '\0';
-//         if (! strncmp(buffer, MSG_STOP, strlen(MSG_STOP)))
-//         {
-//             must_stop = 1;
-//         }
-//         else
-//         {
-//             printf("Received: %s\n", buffer);
-//         }
-//     } while (!must_stop);
-
-//     /* cleanup */
-//     CHECK((mqd_t)-1 != mq_close(mq));
-//     CHECK((mqd_t)-1 != mq_unlink(QUEUE_NAME));
-//     pthread_exit(NULL);
-// }
+     mq = mq_open(chat, O_RDONLY | O_NONBLOCK |O_CREAT, 0777, &attr);
+     strerror(errno);
+     while(1){
+        bytes_read = mq_receive(mq, buffer, MAX_SIZE, NULL);
+        if(bytes_read >= 0) {
+			printf("SERVER: Received message: %s\n", buffer);
+		} else {
+            printf("SERVER: None %s %d \n", strerror(errno), bytes_read);
+		}
+        sleep(3);
+     }
+    /* cleanup */
+    mq_close(mq);
+    mq_unlink(chat);
+    return NULL;
+}
 
 int main(){
     char username[10];
@@ -194,8 +186,8 @@ int main(){
         exit(0);
     }
 
-    //pthread_create  (&id,   NULL , (void *)  receive ,   NULL);
-
     send(username);
+    pthread_create  (&id,   NULL , &receive , NULL);
+    pthread_join (id,NULL);
     return 0;
 }
