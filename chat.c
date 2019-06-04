@@ -189,7 +189,7 @@ void sigintHandler(int sig_num)
 
 int main(){
     signal(SIGINT, sigintHandler);
-    char op[10];
+    char op[10], filepath[30] = "/dev/mqueue/chat-";
     printf("Usuário: ");
     scanf("%[^\n]*c", user);
     getchar();
@@ -214,9 +214,17 @@ int main(){
         }else if (!strcmp(op, "enviar") || !strcmp(op, "ENVIAR")){
             printf("Para enviar uma mensagem escreva a mensagem no formato:\n");
             printf("\tusuario_de_destino:texto_da_mensagem\n");
-            getchar();
             send_message();
         }
         scanf("%s", op);
+        getchar();
     }
+    strcat(filepath, user);
+    int s = remove(filepath);
+    if(!s){
+        printf("Usuário desconectado\n");
+
+    }
+    return 0;
+
 }
