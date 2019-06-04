@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <pthread.h>
+#include <dirent.h>
 
 typedef struct _msg{
     char sender[10];
@@ -19,6 +20,26 @@ char all_message[550];
 char response_message[550];
 struct mq_attr attr;
 mqd_t my_queue, person_queue;
+
+void list_users(){
+    DIR *d;
+    struct dirent *dir;
+    d = opendir("/dev/mqueue/");
+    if (d){
+        printf("Lista de usuários: \n");
+        while ((dir = readdir(d)) != NULL){
+            char *chat, *username, *file = dir->d_name;
+            char split[] = "-";
+            chat = strtok(file, split);
+            if (!strcmp(chat, "chat")){
+                username = strtok(NULL, split);
+                printf("* %s\n", username);
+
+            }
+        }
+        closedir(d);
+    }
+}
 
 msg build_message_to_send(char writen_text[550]){
     int i, k, j;
@@ -79,6 +100,7 @@ void close_person_queue(char *person_name){
 }
 
 int send_message(){
+    printf("send\n");
     char queue[16] = "/chat-", all_path[30] = "/dev/mqueue";
     msg message;
     memset(all_message, 0, sizeof(all_message));
@@ -149,21 +171,41 @@ void open_user_queue(){
     }
 }
 
+void help(){
+    printf("HELP - Aparece esta mensagem\n");
+    printf("LISTA - Aparece a lista de usuários logados\n");
+    printf("ENVIAR - Envia uma nova mensagem\n");
+    printf("SAIR - Envia uma nova mensagem\n");
+}
+
 int main(){
+    char op[10];
     printf("Usuário: ");
     scanf("%[^\n]*c", user);
     getchar();
-    printf("%s\n", user);
 
     attr.mq_maxmsg = 10;
     attr.mq_msgsize = sizeof(all_message);
     attr.mq_flags = 0;
     open_user_queue();
-   
+    
     pthread_t thread;
 
     pthread_create(&thread, NULL, receive_messages, NULL);
-    printf("(Escreva a mensagem no formato: PARA:MENSAGEM)\n");
-
-    while (send_message());
+    
+    help();
+    scanf("%s", op);
+    getchar();
+    while(strcmp(op, "sair") && strcmp(op, "SAIR")){
+        if (!strcmp(op, "help") || !strcmp(op, "HELP")){
+            help();
+        }else if (!strcmp(op, "lista") || !strcmp(op, "LISTA")){
+            list_users();
+        }else if (!strcmp(op, "enviar") || !strcmp(op, "ENVIAR")){
+            printf("Para enviar uma mensagem escreva a mensagem no formato:\n");
+            printf("\tusuario_de_destino:texto_da_mensagem\n");
+            send_message();
+        }
+        scanf("%s", op);
+    }
 }
