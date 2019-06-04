@@ -102,6 +102,33 @@ void open_send_queue(char *person_name){
     }
 }
 
+void broadcast(char message[550]){
+    DIR *d;
+    struct dirent *dir;
+    d = opendir("/dev/mqueue/");
+    if (d){
+        char *chat, *username,* file;
+        while ((dir = readdir(d)) != NULL){
+            file = dir->d_name;
+            char split[] = "-";
+            chat = strtok(file, split);
+            if (!strcmp(chat, "chat")){
+                username = strtok(NULL, split);
+                printf("\nusuario: %s\n", username);
+                printf("mensagem: %s\n", message);
+                open_send_queue(username);
+
+                int send = mq_send(person_queue, message, strlen(message), 0);
+                if (send < 0){
+                    perror("Erro ao enviar");
+                    exit(1);
+                }
+            }
+        }
+        closedir(d);
+    }
+}
+
 int send_message(){
     char queue[16] = "/chat-", all_path[30] = "/dev/mqueue";
     msg message;
@@ -118,15 +145,19 @@ int send_message(){
     // if (fopen(all_path, "r") == NULL){
     //     printf(RED "UNKNOWNUSER %s\n" RESET, message.receiver);
     // }else{
-        open_send_queue(message.receiver);
+        if(!strcmp(message.receiver, "all")){
+            broadcast(message.all_msg);
+        }else{
+            open_send_queue(message.receiver);
 
-        int send = mq_send(person_queue, (void *)&message.all_msg, strlen(message.all_msg), 0);
-        if (send < 0){
-            perror("Erro ao enviar");
-            exit(1);
+            int send = mq_send(person_queue, (void *)&message.all_msg, strlen(message.all_msg), 0);
+            if (send < 0){
+                perror("Erro ao enviar");
+                exit(1);
+            }
+
+            mq_close(person_queue);
         }
-
-        mq_close(person_queue);
     // }
 
     return 1;
@@ -140,6 +171,7 @@ void *receive_messages(){
 
     while (1){
         int receive = mq_receive(my_queue, (void *)&response_message, sizeof(response_message), 0);
+        printf("%s\n", response_message);
         message = build_message_received(response_message);
 
         printf(BLUE "NOVA MENSAGEM de %s: %s" RESET , message.sender, message.text);
