@@ -50,6 +50,14 @@ void list_users(){
     }
 }
 
+int user_exists(const char *username){
+    char filepath[30] = "/dev/mqueue/chat-";
+    strcat(filepath, username);
+    struct stat st;
+    int result = stat(filepath, &st);
+    return result == 0;
+}
+
 msg build_message_to_send(char writen_text[550]){
     int i, k, j;
     msg mensagem;
@@ -140,24 +148,23 @@ int send_message(){
     message = build_message_to_send(all_message);
     strcat(queue, message.receiver);
     strcat(all_path, queue);
+    
+    if (!strcmp(message.receiver, "all")){
+        broadcast(message.all_msg);
 
-    // if (fopen(all_path, "r") == NULL){
-    //     printf(RED "UNKNOWNUSER %s\n" RESET, message.receiver);
-    // }else{
-        if(!strcmp(message.receiver, "all")){
-            broadcast(message.all_msg);
-        }else{
-            open_send_queue(message.receiver);
+    } else if(user_exists(message.receiver)) {
+        open_send_queue(message.receiver);
 
-            int send = mq_send(person_queue, (void *)&message.all_msg, strlen(message.all_msg), 0);
-            if (send < 0){
-                perror("Erro ao enviar");
-                exit(1);
-            }
-
-            mq_close(person_queue);
+        int send = mq_send(person_queue, (void *)&message.all_msg, strlen(message.all_msg), 0);
+        if (send < 0) {
+            perror("Erro ao enviar");
+            exit(1);
         }
-    // }
+
+        mq_close(person_queue);
+    }else{
+        printf(RED "UNKNOWNUSER %s\n" RESET, message.receiver);
+    }
 
     return 1;
 }
@@ -193,7 +200,7 @@ void open_user_queue(){
     if(!strcmp(user, "all")){
         printf(RED "Usuário inválido\n" RESET);
         exit(1);
-    }else if (fopen(all_path, "r") == NULL){
+    }else if (!user_exists(user)){
         __mode_t old_umask = umask(0155);
         if ((my_queue = mq_open(queue, O_RDWR | O_CREAT, 0622, &attr)) < 0){
             umask(old_umask);
@@ -272,6 +279,7 @@ int main(){
         printf(GREEN "Usuário desconectado\n" RESET );
 
     }
+    // printf("%d\n", user_exists("gabi"));
     return 0;
 
 }
