@@ -9,6 +9,12 @@
 #include <dirent.h>
 #include <signal.h>
 
+#define GREEN "\033[0;32m"
+#define YELLOW "\033[0;33m"
+#define BLUE "\033[0;36m"
+#define RED "\033[0;31m"
+#define RESET "\033[0m\n"
+
 typedef struct _msg{
     char sender[10];
     char receiver[10];
@@ -27,7 +33,7 @@ void list_users(){
     struct dirent *dir;
     d = opendir("/dev/mqueue/");
     if (d){
-        printf("Lista de usuários: \n");
+        printf(GREEN "\nLista de usuários: \n");
         while ((dir = readdir(d)) != NULL){
             char *chat, *username, *file = dir->d_name;
             char split[] = "-";
@@ -38,6 +44,7 @@ void list_users(){
 
             }
         }
+        printf(RESET);
         closedir(d);
     }
 }
@@ -100,11 +107,11 @@ void close_person_queue(char *person_name){
 }
 
 int send_message(){
-    printf("send\n");
     char queue[16] = "/chat-", all_path[30] = "/dev/mqueue";
     msg message;
     memset(all_message, 0, sizeof(all_message));
 
+    printf(">");
     scanf("%[^\n]*c", all_message);
     getchar();
 
@@ -113,7 +120,7 @@ int send_message(){
     strcat(all_path, queue);
 
     if (fopen(all_path, "r") == NULL){
-        printf("UNKNOWNUSER %s\n", message.receiver);
+        printf(RED "UNKNOWNUSER %s\n" RESET, message.receiver);
     }else{
         open_person_queue(message.receiver);
 
@@ -139,7 +146,7 @@ void *receive_messages(){
         int receive = mq_receive(my_queue, (void *)&response_message, sizeof(response_message), 0);
         message = build_message_received(response_message);
 
-        printf("NOVA MENSAGEM de %s:%s\n", message.sender, message.text);
+        printf(BLUE "NOVA MENSAGEM de %s: %s" RESET , message.sender, message.text);
         memset(response_message, 0, sizeof(response_message));
     }
 
@@ -152,7 +159,7 @@ void open_user_queue(){
     strcat(all_path, queue);
 
     if(!strcmp(user, "all")){
-        printf("Usuário inválido\n");
+        printf(RED "Usuário inválido\n" RESET);
         exit(1);
     }else if (fopen(all_path, "r") == NULL){
         if ((my_queue = mq_open(queue, O_RDWR | O_CREAT, 0622, &attr)) < 0){
@@ -172,24 +179,27 @@ void open_user_queue(){
 }
 
 void help(){
-    printf("HELP - Aparece esta mensagem\n");
+    printf(YELLOW "\nHELP - Aparece esta mensagem\n");
     printf("LISTA - Aparece a lista de usuários logados\n");
     printf("ENVIAR - Envia uma nova mensagem\n");
-    printf("SAIR - Envia uma nova mensagem\n");
+    printf("SAIR - Sair do chat\n" RESET);
 }
 
 void sigintHandler(int sig_num){
     /* Reset handler to catch SIGINT next time. 
        Refer http://en.cppreference.com/w/c/program/signal */
     signal(SIGINT, sigintHandler);
-    printf("\n O programa não pode terminar com Ctrl+C! Tente SAIR. \n");
+    printf(RED "\n O programa não pode terminar com Ctrl+C! Tente SAIR. \n" RESET);
     fflush(stdout);
 }
 
 int main(){
+    system("clear");
     signal(SIGINT, sigintHandler);
     char op[10], filepath[30] = "/dev/mqueue/chat-";
-    printf("Usuário: ");
+
+    printf("Bem vindo ao Chat!\n\n");
+    printf("Escolha um username para participar: ");
     scanf("%[^\n]*c", user);
     getchar();
 
@@ -211,8 +221,8 @@ int main(){
         }else if (!strcmp(op, "lista") || !strcmp(op, "LISTA")){
             list_users();
         }else if (!strcmp(op, "enviar") || !strcmp(op, "ENVIAR")){
-            printf("Para enviar uma mensagem escreva a mensagem no formato:\n");
-            printf("\tusuario_de_destino:texto_da_mensagem\n");
+            printf(YELLOW "\nPara enviar uma mensagem escreva a mensagem no formato:\n");
+            printf("\tusuario_de_destino:texto_da_mensagem\n"RESET);
             send_message();
         }
         scanf("%s", op);
@@ -221,7 +231,7 @@ int main(){
     strcat(filepath, user);
     int s = remove(filepath);
     if(!s){
-        printf("Usuário desconectado\n");
+        printf(GREEN "Usuário desconectado\n" RESET );
 
     }
     return 0;
