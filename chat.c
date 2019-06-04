@@ -91,7 +91,7 @@ msg build_message_received(char writen_text[550]){
     return mensagem;
 }
 
-void open_person_queue(char *person_name){
+void open_send_queue(char *person_name){
     char queue_name[16] = "/chat-";
 
     strcat(queue_name, person_name);
@@ -100,10 +100,6 @@ void open_person_queue(char *person_name){
         perror("person name mq_open");
         exit(1);
     }
-}
-
-void close_person_queue(char *person_name){
-    mq_close(person_queue);
 }
 
 int send_message(){
@@ -122,7 +118,7 @@ int send_message(){
     // if (fopen(all_path, "r") == NULL){
     //     printf(RED "UNKNOWNUSER %s\n" RESET, message.receiver);
     // }else{
-        open_person_queue(message.receiver);
+        open_send_queue(message.receiver);
 
         int send = mq_send(person_queue, (void *)&message.all_msg, strlen(message.all_msg), 0);
         if (send < 0){
