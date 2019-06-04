@@ -13,6 +13,7 @@
 #define YELLOW "\033[0;33m"
 #define BLUE "\033[0;36m"
 #define RED "\033[0;31m"
+#define MAGENTA "\033[0;35m"
 #define RESET "\033[0m\n"
 
 typedef struct _msg{
@@ -114,8 +115,6 @@ void broadcast(char message[550]){
             chat = strtok(file, split);
             if (!strcmp(chat, "chat")){
                 username = strtok(NULL, split);
-                printf("\nusuario: %s\n", username);
-                printf("mensagem: %s\n", message);
                 open_send_queue(username);
 
                 int send = mq_send(person_queue, message, strlen(message), 0);
@@ -171,10 +170,15 @@ void *receive_messages(){
 
     while (1){
         int receive = mq_receive(my_queue, (void *)&response_message, sizeof(response_message), 0);
-        printf("%s\n", response_message);
         message = build_message_received(response_message);
-
+        if (!strcmp(message.receiver, "all")){
+            printf(MAGENTA "BROADCAST de %s: %s" RESET, message.sender, message.text);
+        }else{
         printf(BLUE "NOVA MENSAGEM de %s: %s" RESET , message.sender, message.text);
+
+        }
+        
+
         memset(response_message, 0, sizeof(response_message));
     }
 
