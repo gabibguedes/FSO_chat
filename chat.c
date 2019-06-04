@@ -258,6 +258,8 @@ int main(){
             printf(YELLOW "\nPara enviar uma mensagem escreva a mensagem no formato:\n");
             printf("\tusuario_de_destino:texto_da_mensagem\n"RESET);
             send_message();
+        }else{
+            printf(YELLOW "\nComando inválido. Digite HELP para listar os possiveis comandos.\n" RESET);
         }
         scanf("%s", op);
         getchar();
