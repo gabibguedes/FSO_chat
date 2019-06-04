@@ -178,8 +178,7 @@ void help(){
     printf("SAIR - Envia uma nova mensagem\n");
 }
 
-void sigintHandler(int sig_num)
-{
+void sigintHandler(int sig_num){
     /* Reset handler to catch SIGINT next time. 
        Refer http://en.cppreference.com/w/c/program/signal */
     signal(SIGINT, sigintHandler);
