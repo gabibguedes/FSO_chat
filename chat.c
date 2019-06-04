@@ -256,7 +256,9 @@ int main(){
             list_users();
         }else if (!strcmp(op, "enviar") || !strcmp(op, "ENVIAR")){
             printf(YELLOW "\nPara enviar uma mensagem escreva a mensagem no formato:\n");
-            printf("\tusuario_de_destino:texto_da_mensagem\n"RESET);
+            printf("\tusuario_de_destino:texto_da_mensagem\n");
+            printf("\nPara um BROADCAST escreva a mensagem no formato:\n");
+            printf("\tall:texto_da_mensagem\n"RESET);
             send_message();
         }else{
             printf(YELLOW "\nComando inválido. Digite HELP para listar os possiveis comandos.\n" RESET);
