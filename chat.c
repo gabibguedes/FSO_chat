@@ -7,6 +7,7 @@
 #include <sys/types.h>
 #include <pthread.h>
 #include <dirent.h>
+#include <signal.h>
 
 typedef struct _msg{
     char sender[10];
@@ -88,8 +89,7 @@ void open_person_queue(char *person_name){
 
     strcat(queue_name, person_name);
 
-    if ((person_queue = mq_open(queue_name, O_RDWR)) < 0)
-    {
+    if ((person_queue = mq_open(queue_name, O_WRONLY)) < 0){
         perror("person name mq_open");
         exit(1);
     }
@@ -155,7 +155,7 @@ void open_user_queue(){
         printf("Usuário inválido\n");
         exit(1);
     }else if (fopen(all_path, "r") == NULL){
-        if ((my_queue = mq_open(queue, O_RDWR | O_CREAT, 0644, &attr)) < 0){
+        if ((my_queue = mq_open(queue, O_RDWR | O_CREAT, 0622, &attr)) < 0){
             perror("mq_open");
             exit(1);
         }
@@ -178,7 +178,17 @@ void help(){
     printf("SAIR - Envia uma nova mensagem\n");
 }
 
+void sigintHandler(int sig_num)
+{
+    /* Reset handler to catch SIGINT next time. 
+       Refer http://en.cppreference.com/w/c/program/signal */
+    signal(SIGINT, sigintHandler);
+    printf("\n O programa não pode terminar com Ctrl+C! Tente SAIR. \n");
+    fflush(stdout);
+}
+
 int main(){
+    signal(SIGINT, sigintHandler);
     char op[10];
     printf("Usuário: ");
     scanf("%[^\n]*c", user);
@@ -204,6 +214,7 @@ int main(){
         }else if (!strcmp(op, "enviar") || !strcmp(op, "ENVIAR")){
             printf("Para enviar uma mensagem escreva a mensagem no formato:\n");
             printf("\tusuario_de_destino:texto_da_mensagem\n");
+            getchar();
             send_message();
         }
         scanf("%s", op);
