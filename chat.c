@@ -119,17 +119,26 @@ void *receive_messages(){
 }
 
 void open_user_queue(){
-    char queue[16] = "/chat-";
+    char queue[16] = "/chat-", all_path[30] = "/dev/mqueue";
     strcat(queue, user);
+    strcat(all_path, queue);
 
-    if ((my_queue = mq_open(queue, O_RDWR | O_CREAT, 0644, &attr)) < 0){
-        perror("mq_open");
+    if(!strcmp(user, "all")){
+        printf("Usuário inválido\n");
         exit(1);
-    }
-    mq_close(my_queue);
+    }else if (fopen(all_path, "r") == NULL){
+        if ((my_queue = mq_open(queue, O_RDWR | O_CREAT, 0644, &attr)) < 0){
+            perror("mq_open");
+            exit(1);
+        }
+        mq_close(my_queue);
 
-    if ((my_queue = mq_open(queue, O_RDWR)) < 0){
-        perror("Erro ao abrir a fila");
+        if ((my_queue = mq_open(queue, O_RDWR)) < 0){
+            perror("Erro ao abrir a fila");
+            exit(1);
+        }
+    }else{
+        printf("Esse usuário já existe :/\n");
         exit(1);
     }
 }
