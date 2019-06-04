@@ -79,7 +79,7 @@ void close_person_queue(char *person_name){
 }
 
 int send_message(){
-    char split[] = ":";
+    char queue[16] = "/chat-", all_path[30] = "/dev/mqueue";
     msg message;
     memset(all_message, 0, sizeof(all_message));
 
@@ -87,16 +87,22 @@ int send_message(){
     getchar();
 
     message = build_message_to_send(all_message);
+    strcat(queue, message.receiver);
+    strcat(all_path, queue);
 
-    open_person_queue(message.receiver);
+    if (fopen(all_path, "r") == NULL){
+        printf("UNKNOWNUSER %s\n", message.receiver);
+    }else{
+        open_person_queue(message.receiver);
 
-    int send = mq_send(person_queue, (void *)&message.all_msg, strlen(message.all_msg), 0);
-    if (send < 0){
-        perror("Erro ao enviar");
-        exit(1);
+        int send = mq_send(person_queue, (void *)&message.all_msg, strlen(message.all_msg), 0);
+        if (send < 0){
+            perror("Erro ao enviar");
+            exit(1);
+        }
+
+        mq_close(person_queue);
     }
-
-    mq_close(person_queue);
 
     return 1;
 }
