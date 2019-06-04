@@ -13,6 +13,7 @@
 #define YELLOW "\033[0;33m"
 #define BLUE "\033[0;36m"
 #define RED "\033[0;31m"
+#define MAGENTA "\033[0;35m"
 #define RESET "\033[0m\n"
 
 typedef struct _msg{
@@ -47,6 +48,14 @@ void list_users(){
         printf(RESET);
         closedir(d);
     }
+}
+
+int user_exists(const char *username){
+    char filepath[30] = "/dev/mqueue/chat-";
+    strcat(filepath, username);
+    struct stat st;
+    int result = stat(filepath, &st);
+    return result == 0;
 }
 
 msg build_message_to_send(char writen_text[550]){
@@ -102,8 +111,32 @@ void open_send_queue(char *person_name){
     }
 }
 
+void broadcast(char message[550]){
+    DIR *d;
+    struct dirent *dir;
+    d = opendir("/dev/mqueue/");
+    if (d){
+        char *chat, *username,* file;
+        while ((dir = readdir(d)) != NULL){
+            file = dir->d_name;
+            char split[] = "-";
+            chat = strtok(file, split);
+            if (!strcmp(chat, "chat")){
+                username = strtok(NULL, split);
+                open_send_queue(username);
+
+                int send = mq_send(person_queue, message, strlen(message), 0);
+                if (send < 0){
+                    perror("Erro ao enviar");
+                    exit(1);
+                }
+            }
+        }
+        closedir(d);
+    }
+}
+
 int send_message(){
-    char queue[16] = "/chat-", all_path[30] = "/dev/mqueue";
     msg message;
     memset(all_message, 0, sizeof(all_message));
 
@@ -112,37 +145,37 @@ int send_message(){
     getchar();
 
     message = build_message_to_send(all_message);
-    strcat(queue, message.receiver);
-    strcat(all_path, queue);
+    
+    if (!strcmp(message.receiver, "all")){
+        broadcast(message.all_msg);
 
-    // if (fopen(all_path, "r") == NULL){
-    //     printf(RED "UNKNOWNUSER %s\n" RESET, message.receiver);
-    // }else{
+    } else if(user_exists(message.receiver)) {
         open_send_queue(message.receiver);
 
         int send = mq_send(person_queue, (void *)&message.all_msg, strlen(message.all_msg), 0);
-        if (send < 0){
+        if (send < 0) {
             perror("Erro ao enviar");
             exit(1);
         }
 
         mq_close(person_queue);
-    // }
+    }else{
+        printf(RED "UNKNOWNUSER %s\n" RESET, message.receiver);
+    }
 
     return 1;
 }
 void *receive_messages(){
-
-    char *sender_name;
-    char *user_name;
-    char *sender_message;
     msg message;
 
     while (1){
         int receive = mq_receive(my_queue, (void *)&response_message, sizeof(response_message), 0);
         message = build_message_received(response_message);
-
-        printf(BLUE "NOVA MENSAGEM de %s: %s" RESET , message.sender, message.text);
+        if (!strcmp(message.receiver, "all")){
+            printf(MAGENTA "BROADCAST de %s: %s" RESET, message.sender, message.text);
+        }else{
+        printf(BLUE "MENSAGEM de %s: %s" RESET , message.sender, message.text);
+        }
         memset(response_message, 0, sizeof(response_message));
     }
 
@@ -157,7 +190,7 @@ void open_user_queue(){
     if(!strcmp(user, "all")){
         printf(RED "Usuário inválido\n" RESET);
         exit(1);
-    }else if (fopen(all_path, "r") == NULL){
+    }else if (!user_exists(user)){
         __mode_t old_umask = umask(0155);
         if ((my_queue = mq_open(queue, O_RDWR | O_CREAT, 0622, &attr)) < 0){
             umask(old_umask);
@@ -184,8 +217,6 @@ void help(){
 }
 
 void sigintHandler(int sig_num){
-    /* Reset handler to catch SIGINT next time. 
-       Refer http://en.cppreference.com/w/c/program/signal */
     signal(SIGINT, sigintHandler);
     printf(RED "\n O programa não pode terminar com Ctrl+C! Tente SAIR. \n" RESET);
     fflush(stdout);
@@ -220,8 +251,12 @@ int main(){
             list_users();
         }else if (!strcmp(op, "enviar") || !strcmp(op, "ENVIAR")){
             printf(YELLOW "\nPara enviar uma mensagem escreva a mensagem no formato:\n");
-            printf("\tusuario_de_destino:texto_da_mensagem\n"RESET);
+            printf("\tusuario_de_destino:texto_da_mensagem\n");
+            printf("\nPara um BROADCAST escreva a mensagem no formato:\n");
+            printf("\tall:texto_da_mensagem\n"RESET);
             send_message();
+        }else{
+            printf(YELLOW "\nComando inválido. Digite HELP para listar os possiveis comandos.\n" RESET);
         }
         scanf("%s", op);
         getchar();
