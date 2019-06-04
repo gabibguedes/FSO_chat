@@ -137,7 +137,6 @@ void broadcast(char message[550]){
 }
 
 int send_message(){
-    char queue[16] = "/chat-", all_path[30] = "/dev/mqueue";
     msg message;
     memset(all_message, 0, sizeof(all_message));
 
@@ -146,8 +145,6 @@ int send_message(){
     getchar();
 
     message = build_message_to_send(all_message);
-    strcat(queue, message.receiver);
-    strcat(all_path, queue);
     
     if (!strcmp(message.receiver, "all")){
         broadcast(message.all_msg);
@@ -169,10 +166,6 @@ int send_message(){
     return 1;
 }
 void *receive_messages(){
-
-    char *sender_name;
-    char *user_name;
-    char *sender_message;
     msg message;
 
     while (1){
@@ -181,11 +174,8 @@ void *receive_messages(){
         if (!strcmp(message.receiver, "all")){
             printf(MAGENTA "BROADCAST de %s: %s" RESET, message.sender, message.text);
         }else{
-        printf(BLUE "NOVA MENSAGEM de %s: %s" RESET , message.sender, message.text);
-
+        printf(BLUE "MENSAGEM de %s: %s" RESET , message.sender, message.text);
         }
-        
-
         memset(response_message, 0, sizeof(response_message));
     }
 
@@ -227,8 +217,6 @@ void help(){
 }
 
 void sigintHandler(int sig_num){
-    /* Reset handler to catch SIGINT next time. 
-       Refer http://en.cppreference.com/w/c/program/signal */
     signal(SIGINT, sigintHandler);
     printf(RED "\n O programa não pode terminar com Ctrl+C! Tente SAIR. \n" RESET);
     fflush(stdout);
@@ -279,7 +267,6 @@ int main(){
         printf(GREEN "Usuário desconectado\n" RESET );
 
     }
-    // printf("%d\n", user_exists("gabi"));
     return 0;
 
 }
