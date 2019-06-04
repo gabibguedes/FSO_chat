@@ -119,9 +119,9 @@ int send_message(){
     strcat(queue, message.receiver);
     strcat(all_path, queue);
 
-    if (fopen(all_path, "r") == NULL){
-        printf(RED "UNKNOWNUSER %s\n" RESET, message.receiver);
-    }else{
+    // if (fopen(all_path, "r") == NULL){
+    //     printf(RED "UNKNOWNUSER %s\n" RESET, message.receiver);
+    // }else{
         open_person_queue(message.receiver);
 
         int send = mq_send(person_queue, (void *)&message.all_msg, strlen(message.all_msg), 0);
@@ -131,7 +131,7 @@ int send_message(){
         }
 
         mq_close(person_queue);
-    }
+    // }
 
     return 1;
 }
@@ -162,7 +162,9 @@ void open_user_queue(){
         printf(RED "Usuário inválido\n" RESET);
         exit(1);
     }else if (fopen(all_path, "r") == NULL){
+        __mode_t old_umask = umask(0155);
         if ((my_queue = mq_open(queue, O_RDWR | O_CREAT, 0622, &attr)) < 0){
+            umask(old_umask);
             perror("mq_open");
             exit(1);
         }
