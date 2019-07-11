@@ -2,8 +2,7 @@ function __templateRUN()
 {
   # Coloque aqui como executar o seu programa
   # se o seu programa recebe o USERNAME por parâmetro pode passar já
-  echo make
-  echo make run
+  ./chat
 }
 
 function __templateGENNAME()
@@ -55,6 +54,7 @@ function __templateCRIARSALA()
 {
   #template para criar sala
   local SALA=$1
+  echo criar_sala
   echo "$SALA"
 }
 
@@ -63,15 +63,15 @@ function __templateSENDMSGSALA()
   local SALA="$1"
   local MSG="$2"
   #template enviar mensagem em sala
-  echo $SALA
-  echo $MSG
+  echo enviar_sala
+  echo "$SALA:$MSG"
 }
 
 function __templateJOINSALA()
 {
   local SALA=$1
-  echo $SALA
-  echo join
+  echo enviar_sala
+  echo "$SALA:join"
 }
 
 function __templateEXITSALA()
