@@ -58,6 +58,25 @@ void list_users(){
         closedir(d);
     }
 }
+void list_chanels(){
+    DIR *d;
+    struct dirent *dir;
+    d = opendir("/dev/mqueue/");
+    if (d){
+        printf(GREEN "\nLista de salas: \n");
+        while ((dir = readdir(d)) != NULL){
+            char *chanel, *room, *file = dir->d_name;
+            char split[] = "-";
+            chanel = strtok(file, split);
+            if (!strcmp(chanel, "canal")){
+                room = strtok(NULL, split);
+                printf("* %s\n", room);
+            }
+        }
+        printf(RESET);
+        closedir(d);
+    }
+}
 
 int user_exists(const char *username){
     char filepath[30] = "/dev/mqueue/chat-";
@@ -285,6 +304,10 @@ void *receive_messages_chanel(){
 
         if(user_in_chanel(message.sender, rec_chanel)){
             send_chanel(message, rec_chanel);
+        }else if(!strcmp(message.text, "join") || !strcmp(message.text, "JOIN")){
+            strcpy(rec_chanel.users[cl_position], message.sender);
+            rec_chanel.size ++;
+
         }else{
             strcpy(message.text, "NOT A MEMBER\0");
             send_chanel(message, rec_chanel);
@@ -353,10 +376,11 @@ void open_chanel_queue(chanel new_chanel){
 
 void help(){
     printf(YELLOW "\nHELP - Aparece esta mensagem\n");
+    printf("CRIAR_SALA - Cria uma nova sala\n");
     printf("LISTAR - Aparece a lista de usuários logados\n");
+    printf("LISTAR_SALAS - Aparece a lista de usuários logados\n");
     printf("ENVIAR - Envia uma nova mensagem\n");
-    printf("CRIAR - Cria uma nova sala\n");
-    printf("SALA - Envia uma nova mensagem para uma sala\n");
+    printf("ENVIAR_SALA - Envia uma nova mensagem para uma sala\n");
     printf("SAIR - Sair do chat\n" RESET);
 }
 
@@ -426,16 +450,18 @@ int main(){
             help();
         }else if (!strcmp(op, "listar") || !strcmp(op, "LISTAR")){
             list_users();
+        }else if (!strcmp(op, "listar_salas") || !strcmp(op, "LISTAR_SALAS")){
+            list_chanels();
         }else if (!strcmp(op, "enviar") || !strcmp(op, "ENVIAR")){
             printf(YELLOW "\nPara enviar uma mensagem escreva a mensagem no formato:\n");
             printf("\tusuario_de_destino:texto_da_mensagem\n");
             printf("\nPara um BROADCAST escreva a mensagem no formato:\n");
             printf("\tall:texto_da_mensagem\n"RESET);
             send_message();
-        }else if(!strcmp(op, "criar") || !strcmp(op, "CRIAR")){
+        }else if(!strcmp(op, "criar_sala") || !strcmp(op, "CRIAR_SALA")){
             printf(YELLOW "\nEscreva o nome da sala que deseja criar\n" RESET);
             create_room();
-        }else if(!strcmp(op, "sala") || !strcmp(op, "SALA")){
+        }else if(!strcmp(op, "enviar_sala") || !strcmp(op, "ENVIAR_SALA")){
             printf(YELLOW "\nPara enviar uma mensagem para uma sala escreva a mensagem no formato:\n");
             printf("\tsala_de_destino:texto_da_mensagem\n" RESET);
             send_message_chanel();
