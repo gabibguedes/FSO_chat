@@ -85,10 +85,4 @@ __Requisitos Faltantes:__
 O programa apresenta um erro de segmentação caso o usuário escreva a mensagem a ser enviada no formato incorreto (sem os dois pontos `:`).
 O programa apresenta erro ao mandar mensagem para salas com underline `_`
 
-<!-- 
-- sair da sala
-- assinatura
-- arrumar o script
-- verificar se ta no padrão(ex.: itens "se for membro" e "destroy") 
--->
 
