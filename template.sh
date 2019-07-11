@@ -2,6 +2,7 @@ function __templateRUN()
 {
   # Coloque aqui como executar o seu programa
   # se o seu programa recebe o USERNAME por parâmetro pode passar já
+  echo make
   ./chat
 }
 
