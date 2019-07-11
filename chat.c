@@ -206,11 +206,13 @@ void send_chanel(msg message, chanel c){
     char username[10];
     for(int i = 0; i < c.size; i++){
         strcpy(username, c.users[i]);
-        open_send_queue(username);
-        int send = mq_send(person_queue, msg_chanel.all_msg, strlen(msg_chanel.all_msg), 0);
-        if (send < 0){
-            perror("Erro ao enviar");
-            exit(1);
+        if(user_exists(username)) {
+            open_send_queue(username);
+            int send = mq_send(person_queue, msg_chanel.all_msg, strlen(msg_chanel.all_msg), 0);
+            if (send < 0){
+                perror("Erro ao enviar");
+                exit(1);
+            }
         }
     }
 }
@@ -305,7 +307,7 @@ void *receive_messages_chanel(){
         if(user_in_chanel(message.sender, rec_chanel)){
             send_chanel(message, rec_chanel);
         }else if(!strcmp(message.text, "join") || !strcmp(message.text, "JOIN")){
-            strcpy(rec_chanel.users[cl_position], message.sender);
+            strcpy(rec_chanel.users[rec_chanel.size], message.sender);
             rec_chanel.size ++;
 
         }else{
@@ -462,7 +464,9 @@ int main(){
             create_room();
         }else if(!strcmp(op, "enviar_sala") || !strcmp(op, "ENVIAR_SALA")){
             printf(YELLOW "\nPara enviar uma mensagem para uma sala escreva a mensagem no formato:\n");
-            printf("\tsala_de_destino:texto_da_mensagem\n" RESET);
+            printf("\tsala_de_destino:texto_da_mensagem\n");
+            printf("\nPara entrar em uma sala digite:\n");
+            printf("\tsala_de_destino:JOIN\n" RESET);
             send_message_chanel();
         }else{
             printf(YELLOW "\nComando inválido. Digite HELP para listar os possiveis comandos.\n" RESET);

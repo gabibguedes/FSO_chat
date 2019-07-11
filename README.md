@@ -83,6 +83,7 @@ __Requisitos Faltantes:__
 
 ## Problemas conhecidos
 O programa apresenta um erro de segmentação caso o usuário escreva a mensagem a ser enviada no formato incorreto (sem os dois pontos `:`).
+O programa apresenta erro ao mandar mensagem para salas com underline `_`
 
 <!-- 
 - sair da sala

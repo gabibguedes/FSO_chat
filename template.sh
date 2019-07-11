@@ -77,6 +77,6 @@ function __templateJOINSALA()
 function __templateEXITSALA()
 {
   local SALA=$1
-  echo $SALA
-  echo exit
+  echo enviar_sala
+  echo "$SALA:leave"
 }
