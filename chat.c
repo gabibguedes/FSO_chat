@@ -424,7 +424,6 @@ void remove_chanels(){
 }
 
 int main(){
-    system("clear");
     signal(SIGINT, sigintHandler);
     char op[10], filepath[30] = "/dev/mqueue/chat-";
 
